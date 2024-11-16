@@ -96,11 +96,17 @@ try:
                     comment_text = comment_text[6:]
 
                     if match_comment_color(comment_text,color,first_name,last_name):
-                        # Save to a .pgn file
-                        filename = os.path.join(foldername, os.path.basename(link).replace('.htm', '.pgn'))
-                        with open(filename, 'w', encoding='utf-8') as f:
-                            f.write(comment_text)
-                            print(f"Saved comment to {filename}")
+
+                        valid = bool(re.search(r'}\s*1\.', comment_text))
+
+                        if valid:
+                            # Save to a .pgn file
+                            filename = os.path.join(foldername, os.path.basename(link).replace('.htm', '.pgn'))
+                            with open(filename, 'w', encoding='utf-8') as f:
+                                f.write(comment_text)
+                                print(f"Saved comment to {filename}")
+                        else:
+                            print("no moves in pgn (result only), skipping")
                     else:
                         print("skipped, wrong colour")
                 else:
@@ -121,7 +127,8 @@ if os.path.exists(foldername):
     if not files:
         print("no pgn files found")
     else:
-        output_file = f"{foldername}.pgn"
+        colour = "black" if color=="b" else "white"
+        output_file = f"{foldername}_{colour}.pgn"
         with open(output_file, "w") as outfile:
             for file in files:
                 with open(file, "r") as infile:
