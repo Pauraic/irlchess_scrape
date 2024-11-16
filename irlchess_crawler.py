@@ -6,15 +6,41 @@ from bs4 import BeautifulSoup,Comment
 from urllib.parse import quote
 import glob
 import shutil
+import re
 
 
 site = "https://www.irlchess.com/cgi-bin/searchforgames.pl?query="
 
 name = input("Enter player name ( e.g. John Smith): ")
+color = input("Are they playing white or black? ( type w or b): ").strip().lower()
+if color not in ["w","b"]:
+    print("invalid choice!")
+    exit()
+
+def match_comment_color(comment,color,firstname,lastname):
+    white_match = re.search(r'\[White "([^"]+)"\]',comment)
+    black_match = re.search(r'\[Black "([^"]+)"\]',comment)
+
+    white_player = white_match.group(1) if white_match else ""
+    black_player = black_match.group(1) if black_match else ""
+
+    player_field = white_player if color == "w" else black_player
+
+    if ", " in player_field:
+        last_name_field, first_name_field = player_field.split(", ", 1)
+    else:
+        last_name_field, first_name_field = player_field, ""
+
+    first_name_matches = first_name.lower() in first_name_field.lower()
+    last_name_matches = last_name.lower() in last_name_field.lower()
+
+    return first_name_matches and last_name_matches
+
+
+
 
 foldername = ''.join(c for c in name if c.isalnum())
 
-#print(foldername)
 if not os.path.exists(foldername):
     os.makedirs(foldername)
 
@@ -69,11 +95,14 @@ try:
                     comment_text = comments[-1].strip()  # Get the last comment
                     comment_text = comment_text[6:]
 
-                    # Save to a .pgn file
-                    filename = os.path.join(foldername, os.path.basename(link).replace('.htm', '.pgn'))
-                    with open(filename, 'w', encoding='utf-8') as f:
-                        f.write(comment_text)
-                        print(f"Saved comment to {filename}")
+                    if match_comment_color(comment_text,color,first_name,last_name):
+                        # Save to a .pgn file
+                        filename = os.path.join(foldername, os.path.basename(link).replace('.htm', '.pgn'))
+                        with open(filename, 'w', encoding='utf-8') as f:
+                            f.write(comment_text)
+                            print(f"Saved comment to {filename}")
+                    else:
+                        print("skipped, wrong colour")
                 else:
                     print(f"No comments found in {link}")
             except requests.RequestException as e:
